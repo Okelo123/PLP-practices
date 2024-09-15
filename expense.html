@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker</title>
+    <style>
+        /* Basic reset and body styling */
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+
+        /* Header styling */
+        header {
+            background-color: #343a40;
+            color: #ffffff;
+            padding: 20px 0;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Container styling */
+        .container {
+            width: 90%;
+            max-width: 800px;
+            margin: 30px auto;
+            background-color: #ffffff;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        /* Form styling */
+        form {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        form input[type="text"],
+        form input[type="number"] {
+            width: 48%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+        }
+
+        form input[type="submit"] {
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: #ffffff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        form input[type="submit"]:hover {
+            background-color: #218838;
+        }
+
+        /* Expense List styling */
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        li {
+            background-color: #e9ecef;
+            margin: 10px 0;
+            padding: 10px 15px;
+            border-left: 5px solid #28a745;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 4px;
+        }
+
+        li span {
+            font-weight: bold;
+        }
+
+        /* Total Amount styling */
+        #total-amount {
+            font-size: 1.5em;
+            color: #28a745;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Expense Tracker</h1>
+    </header>
+    <div class="container">
+        <h2>Add New Expense</h2>
+        <form id="expense-form">
+            <input type="text" id="expense-name" placeholder="Expense Name" required>
+            <input type="number" id="expense-amount" placeholder="Amount" required>
+            <input type="submit" value="Add Expense">
+        </form>
+
+        <h2>Expense List</h2>
+        <ul id="expense-list">
+            <!-- Expenses will be listed here -->
+        </ul>
+
+        <h2>Total: Ksh<span id="total-amount">0</span></h2>
+    </div>
+
+    <script>
+        // Select elements
+        const expenseForm = document.getElementById('expense-form');
+        const expenseName = document.getElementById('expense-name');
+        const expenseAmount = document.getElementById('expense-amount');
+        const expenseList = document.getElementById('expense-list');
+        const totalAmount = document.getElementById('total-amount');
+
+        let total = 0;
+        let expenses = [];
+
+        // Load saved data from localStorage
+        if (localStorage.getItem('expenses')) {
+            expenses = JSON.parse(localStorage.getItem('expenses'));
+            expenses.forEach(expense => addExpenseToDOM(expense.name, expense.amount));
+            updateTotal();
+        }
+
+        // Event listener for form submission
+        expenseForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            // Get input values
+            const name = expenseName.value;
+            const amount = parseFloat(expenseAmount.value);
+
+            // Save expense to the array and localStorage
+            const expense = { name, amount };
+            expenses.push(expense);
+            localStorage.setItem('expenses', JSON.stringify(expenses));
+
+            // Add expense to the DOM
+            addExpenseToDOM(name, amount);
+
+            // Clear the form
+            expenseName.value = '';
+            expenseAmount.value = '';
+
+            // Update the total
+            updateTotal();
+        });
+
+        function addExpenseToDOM(name, amount) {
+            // Create a new list item with delete button
+            const li = document.createElement('li');
+            li.innerHTML = `${name} <span>Ksh ${amount.toFixed(2)}</span> 
+                            <button class="delete-btn">X</button>`;
+            expenseList.appendChild(li);
+
+            // Add delete functionality
+            li.querySelector('.delete-btn').addEventListener('click', function() {
+                // Remove the expense from the array
+                expenses = expenses.filter(exp => exp.name !== name || exp.amount !== amount);
+                localStorage.setItem('expenses', JSON.stringify(expenses));
+
+                // Subtract the expense amount from the total
+                total -= amount;
+                totalAmount.textContent = total.toFixed(2);
+
+                // Remove the list item from the DOM
+                li.remove();
+            });
+        }
+
+        function updateTotal() {
+            total = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+            totalAmount.textContent = total.toFixed(2);
+        }
+    </script>
+</body>
+</html>
