@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Expense Tracker</title>
+    <title>Expense Tracker with Chart</title>
     <style>
-        /* Basic reset and body styling */
         body {
             font-family: 'Arial', sans-serif;
             margin: 0;
@@ -13,8 +12,6 @@
             background-color: #f8f9fa;
             color: #333;
         }
-
-        /* Header styling */
         header {
             background-color: #343a40;
             color: #ffffff;
@@ -22,8 +19,6 @@
             text-align: center;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
-
-        /* Container styling */
         .container {
             width: 90%;
             max-width: 800px;
@@ -33,14 +28,11 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             border-radius: 8px;
         }
-
-        /* Form styling */
         form {
             display: flex;
             justify-content: space-between;
             margin-bottom: 20px;
         }
-
         form input[type="text"],
         form input[type="number"] {
             width: 48%;
@@ -49,7 +41,6 @@
             border: 1px solid #ced4da;
             border-radius: 5px;
         }
-
         form input[type="submit"] {
             padding: 10px 20px;
             background-color: #28a745;
@@ -59,17 +50,13 @@
             cursor: pointer;
             transition: background-color 0.3s;
         }
-
         form input[type="submit"]:hover {
             background-color: #218838;
         }
-
-        /* Expense List styling */
         ul {
             list-style-type: none;
             padding: 0;
         }
-
         li {
             background-color: #e9ecef;
             margin: 10px 0;
@@ -80,15 +67,15 @@
             align-items: center;
             border-radius: 4px;
         }
-
         li span {
             font-weight: bold;
         }
-
-        /* Total Amount styling */
         #total-amount {
             font-size: 1.5em;
             color: #28a745;
+        }
+        #myChart {
+            margin-top: 30px;
         }
     </style>
 </head>
@@ -109,9 +96,13 @@
             <!-- Expenses will be listed here -->
         </ul>
 
-        <h2>Total: Ksh<span id="total-amount">0</span></h2>
+        <h2>Total: Ksh <span id="total-amount">0</span></h2>
+
+        <canvas id="myChart" width="400" height="200"></canvas>
     </div>
 
+    <!-- Chart.js Library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         // Select elements
         const expenseForm = document.getElementById('expense-form');
@@ -119,6 +110,7 @@
         const expenseAmount = document.getElementById('expense-amount');
         const expenseList = document.getElementById('expense-list');
         const totalAmount = document.getElementById('total-amount');
+        const ctx = document.getElementById('myChart').getContext('2d');
 
         let total = 0;
         let expenses = [];
@@ -128,57 +120,90 @@
             expenses = JSON.parse(localStorage.getItem('expenses'));
             expenses.forEach(expense => addExpenseToDOM(expense.name, expense.amount));
             updateTotal();
+            updateChart();
         }
 
         // Event listener for form submission
         expenseForm.addEventListener('submit', function(event) {
             event.preventDefault();
 
-            // Get input values
             const name = expenseName.value;
             const amount = parseFloat(expenseAmount.value);
 
-            // Save expense to the array and localStorage
-            const expense = { name, amount };
-            expenses.push(expense);
-            localStorage.setItem('expenses', JSON.stringify(expenses));
+            if (name && amount > 0) {
+                // Save expense to the array and localStorage
+                const expense = { name, amount };
+                expenses.push(expense);
+                localStorage.setItem('expenses', JSON.stringify(expenses));
 
-            // Add expense to the DOM
-            addExpenseToDOM(name, amount);
+                // Add expense to the DOM
+                addExpenseToDOM(name, amount);
 
-            // Clear the form
-            expenseName.value = '';
-            expenseAmount.value = '';
+                // Clear the form
+                expenseName.value = '';
+                expenseAmount.value = '';
 
-            // Update the total
-            updateTotal();
+                // Update the total and chart
+                updateTotal();
+                updateChart();
+            } else {
+                alert('Please provide a valid name and amount!');
+            }
         });
 
         function addExpenseToDOM(name, amount) {
-            // Create a new list item with delete button
             const li = document.createElement('li');
             li.innerHTML = `${name} <span>Ksh ${amount.toFixed(2)}</span> 
                             <button class="delete-btn">X</button>`;
             expenseList.appendChild(li);
 
-            // Add delete functionality
             li.querySelector('.delete-btn').addEventListener('click', function() {
-                // Remove the expense from the array
                 expenses = expenses.filter(exp => exp.name !== name || exp.amount !== amount);
                 localStorage.setItem('expenses', JSON.stringify(expenses));
-
-                // Subtract the expense amount from the total
                 total -= amount;
                 totalAmount.textContent = total.toFixed(2);
-
-                // Remove the list item from the DOM
                 li.remove();
+                updateChart();
             });
         }
 
         function updateTotal() {
             total = expenses.reduce((sum, expense) => sum + expense.amount, 0);
             totalAmount.textContent = total.toFixed(2);
+        }
+
+        // Create a chart
+        let chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: expenses.map(exp => exp.name),
+                datasets: [{
+                    label: 'Expense Amount',
+                    data: expenses.map(exp => exp.amount),
+                    backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    x: {
+                        beginAtZero: true
+                    },
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Update chart with new data
+        function updateChart() {
+            if (expenses.length > 0) {
+                chart.data.labels = expenses.map(exp => exp.name);
+                chart.data.datasets[0].data = expenses.map(exp => exp.amount);
+                chart.update();
+            }
         }
     </script>
 </body>
